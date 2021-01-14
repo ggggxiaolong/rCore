@@ -23,3 +23,7 @@ pub fn memory_test() {
     }
     println!("Heap test passes")
 }
+
+pub fn kernel_address_test() {
+    println!("kernel_address: 0x{:x}", (*crate::memory::config::KERNEL_END_ADDRESS).0);
+}
