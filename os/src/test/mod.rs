@@ -27,3 +27,19 @@ pub fn memory_test() {
 pub fn kernel_address_test() {
     println!("kernel_address: 0x{:x}", (*crate::memory::config::KERNEL_END_ADDRESS).0);
 }
+
+pub fn physical_memory_test() {
+    use crate::memory;
+    for _ in 0..2 {
+        let frame_0 = match memory::frame::FRAME_ALLOCATOR.lock().alloc() {
+           Result::Ok(frame_tracker) => frame_tracker,
+            Result::Err(err) => panic!("{}", err)
+        };
+
+        let frame_1 = match memory::frame::FRAME_ALLOCATOR.lock().alloc() {
+            Result::Ok(frame_tracker) => frame_tracker,
+            Result::Err(err) => panic!("{}", err)
+        };
+        println!("{} and {}", frame_0.address(), frame_1.address())
+    }
+}

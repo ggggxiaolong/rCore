@@ -45,6 +45,6 @@ pub extern "C" fn rust_main() {
     interrupt::init();
     memory::init();
 
-    test::kernel_address_test();
+    test::physical_memory_test();
     panic!()
 }
