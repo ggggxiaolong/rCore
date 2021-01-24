@@ -2,7 +2,8 @@
 //!
 //! 我们为虚拟地址和物理地址设立两种类型， 利用编译器检查来防止混淆
 
-use crate::memory::config::PAGE_SIZE;
+use crate::memory::config::{PAGE_SIZE, KERNEL_MAP_OFFSET};
+use bit_field::BitField;
 
 /// 物理地址(0x080..)
 #[repr(C)]
@@ -14,10 +15,101 @@ pub struct PhysicalAddress(pub usize);
 #[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct PhysicalPageNumber(pub usize);
 
-impl PhysicalAddress {
+/// 虚拟页号
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct VirtualPageNumber(pub usize);
+
+/// 虚拟地址
+#[repr(C)]
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct VirtualAddress(pub usize);
+
+/// 从指针转换为虚拟地址
+impl<T> From<*const T> for VirtualAddress {
+    fn from(pointer: *const T) -> Self {
+        Self(pointer as usize)
+    }
+}
+
+/// 从指针转换为虚拟地址
+impl<T> From<*mut T> for VirtualAddress {
+    fn from(pointer: (*mut T)) -> Self {
+        Self(pointer as usize)
+    }
+}
+
+/// 物理页转换为虚拟页
+impl From<PhysicalPageNumber> for VirtualPageNumber {
+    fn from(ppn: PhysicalPageNumber) -> Self {
+        Self(ppn.0 + KERNEL_MAP_OFFSET / PAGE_SIZE)
+    }
+}
+
+/// 虚拟页转换为物理页
+impl From<VirtualPageNumber> for PhysicalPageNumber {
+    fn from(vpn: VirtualPageNumber) -> Self {
+        Self(vpn.0 - KERNEL_MAP_OFFSET / PAGE_SIZE)
+    }
+}
+
+/// 物理地址转换为虚拟地址
+impl From<PhysicalAddress> for VirtualAddress {
+    fn from(pa: PhysicalAddress) -> Self {
+        Self(pa.0 + KERNEL_MAP_OFFSET)
+    }
+}
+
+/// 虚拟地址转换为物理地址
+impl From<VirtualAddress> for PhysicalAddress {
+    fn from(va: VirtualAddress) -> Self {
+        Self(va.0 - KERNEL_MAP_OFFSET)
+    }
+}
+
+impl VirtualAddress {
+    /// 从虚拟地址取得某类型的 &mut T 引用
+    pub fn deref<T>(self) ->&'static mut T {
+        unsafe {&mut *(self.0 as * mut T)}
+    }
     /// 取得页内偏移
     pub fn page_offset(&self) -> usize {
         self.0 % PAGE_SIZE
+    }
+}
+
+impl PhysicalAddress {
+    /// 从物理地址经过线性映射取得 &mut 引用
+    pub fn deref<T>(self) ->&'static mut T {
+        VirtualAddress::from(self).deref()
+    }
+    /// 取得页内偏移
+    pub fn page_offset(&self) -> usize {
+        self.0 % PAGE_SIZE
+    }
+}
+
+impl VirtualPageNumber {
+    /// 从虚拟地址取得页面
+    pub fn deref(self) -> &'static mut [u8; PAGE_SIZE] {
+        VirtualAddress::from(self).deref()
+    }
+}
+
+impl PhysicalPageNumber {
+    pub fn deref_kernel(self) -> &'static mut [u8; PAGE_SIZE] {
+        PhysicalAddress::from(self).deref()
+    }
+}
+
+impl VirtualPageNumber {
+    /// 得到一.二.三级页号
+    pub fn levels(self) -> [usize; 3] {
+        [
+            self.0.get_bits(18..27),
+            self.0.get_bits(9..18),
+            self.0.get_bits(0..9),
+        ]
     }
 }
 
@@ -51,6 +143,7 @@ macro_rules! implement_address_to_page_number {
 }
 
 implement_address_to_page_number! {PhysicalAddress, PhysicalPageNumber}
+implement_address_to_page_number! {VirtualAddress, VirtualPageNumber}
 
 macro_rules! implement_usize_operations {
     ($type_name: ty) => {
@@ -112,6 +205,7 @@ macro_rules! implement_usize_operations {
             }
         }
 
+        /// {} 输出
         impl core::fmt::Display for $type_name {
             fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
                 write!(f, "{}(0x{:x})", stringify!($type_name), self.0)
@@ -122,3 +216,5 @@ macro_rules! implement_usize_operations {
 
 implement_usize_operations! {PhysicalAddress}
 implement_usize_operations! {PhysicalPageNumber}
+implement_usize_operations! {VirtualAddress}
+implement_usize_operations! {VirtualPageNumber}

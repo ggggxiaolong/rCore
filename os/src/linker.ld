@@ -5,7 +5,7 @@ OUTPUT_ARCH(riscv)
 ENTRY(_start)
 
 /* 数据存放起始地址 */
-BASE_ADDRESS = 0x80200000;
+BASE_ADDRESS = 0xffffffff80200000; /* 修改为虚拟地址 */
 
 SECTIONS
 {
@@ -15,6 +15,8 @@ SECTIONS
     /* start 符号表示全部的开始位置 */
     kernel_start = .;
 
+    /* 加入对齐 */
+    . = ALIGN(4K);
     text_start = .;
 
     /* .text 字段 */
@@ -25,6 +27,8 @@ SECTIONS
         *(.text .text.*)
     }
 
+    /* 加入对齐 */
+    . = ALIGN(4K);
     rodata_start = .;
 
     /* .rodata 字段 */
@@ -33,6 +37,8 @@ SECTIONS
         *(.rodata .rodata.*)
     }
 
+    /* 加入对齐 */
+    . = ALIGN(4K);
     data_start = .;
 
     /* .data 字段 */
@@ -41,6 +47,8 @@ SECTIONS
         *(.data .data.*)
     }
 
+    /* 加入对齐 */
+    . = ALIGN(4K);
     bss_start = .;
 
     /* .bss 字段 */
@@ -50,5 +58,7 @@ SECTIONS
     }
 
     /* 结束地址 */
+    /* 加入对齐 */
+    . = ALIGN(4K);
     kernel_end = .;
 }

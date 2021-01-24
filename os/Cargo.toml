@@ -12,3 +12,5 @@ buddy_system_allocator = "0.6.0"
 lazy_static = { version = "1.4.0", features = ["spin_no_std"] }
 algorithm = { path = 'src/algorithm' }
 spin = "0.7.1"
+bitflags = "1.2.1"
+bit_field = "0.10.1"
