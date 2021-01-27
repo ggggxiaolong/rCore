@@ -11,6 +11,7 @@ pub mod heap;
 pub mod address;
 pub mod frame;
 pub mod range;
+mod mapping;
 
 pub type MemoryResult<T> = Result<T, &'static str>;
 

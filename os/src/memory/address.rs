@@ -80,7 +80,7 @@ impl VirtualAddress {
 
 impl PhysicalAddress {
     /// 从物理地址经过线性映射取得 &mut 引用
-    pub fn deref<T>(self) ->&'static mut T {
+    pub fn deref_kernel<T>(self) ->&'static mut T {
         VirtualAddress::from(self).deref()
     }
     /// 取得页内偏移
@@ -98,7 +98,7 @@ impl VirtualPageNumber {
 
 impl PhysicalPageNumber {
     pub fn deref_kernel(self) -> &'static mut [u8; PAGE_SIZE] {
-        PhysicalAddress::from(self).deref()
+        PhysicalAddress::from(self).deref_kernel()
     }
 }
 
